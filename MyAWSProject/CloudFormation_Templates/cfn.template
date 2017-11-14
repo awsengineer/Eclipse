@@ -1,0 +1,11 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "EC2I46ODP": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+              "KeyName" : "mykey"
+            }
+        }
+    }
+}

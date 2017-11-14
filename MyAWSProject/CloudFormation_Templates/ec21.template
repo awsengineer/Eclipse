@@ -1,0 +1,45 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+    "EC2I1HS6" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : "ami-c58c1dd3",
+        "InstanceType" : "t2.large",
+        "SecurityGroupIds" : [ "sg-79a8ac06" ],
+        "AvailabilityZone" : "us-east-1a",
+        "KeyName" : "myamazon_us_east1_keypair"
+      }
+    },
+    "EC2NI18W8V" : {
+      "Type" : "AWS::EC2::NetworkInterface",
+      "Properties" : {
+        "PrivateIpAddress" : "172.31.0.235",
+        "SubnetId" : "subnet-71ab3438"
+      }
+    },
+    "AttachENI" : {
+      "Type" : "AWS::EC2::NetworkInterfaceAttachment",
+      "DependsOn" : [ "EC2NI18W8V", "EC2I1HS6" ],
+      "Properties" : {
+        "DeviceIndex" : "1",
+        "InstanceId" : {
+          "Ref" : "EC2I1HS6"
+        },
+        "NetworkInterfaceId" : {
+          "Ref" : "EC2NI18W8V"
+        }
+        
+      }
+    },
+    "MyEIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "InstanceId" : {
+          "Ref" : "EC2I1HS6"
+        }
+        
+      }
+    }
+  }
+}

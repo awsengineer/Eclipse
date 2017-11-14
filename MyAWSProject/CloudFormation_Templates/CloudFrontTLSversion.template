@@ -1,0 +1,34 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+    "EC2I46ODP" : {
+      "Type" : "AWS::CloudFront::Distribution",
+      "Properties" : {
+        "DistributionConfig" : {
+          "Aliases" : [ "albeclipse.awsengineer.com" ],
+          "ViewerCertificate" : {
+            "AcmCertificateArn" : "arn:aws:acm:us-east-1:960780153193:certificate/2887a556-947d-4424-8183-65d7b458c9eb",
+            "MinimumProtocolVersion" : "TLSv1.1_2016",
+            "SslSupportMethod" : "sni-only"
+          },
+          "Enabled" : "True",
+          "Origins" : [ {
+            "DomainName" : "awsengineer.com",
+            "Id" : "origin1",
+            "CustomOriginConfig" : {
+              "OriginProtocolPolicy" : "http-only"
+            }
+          } ],
+          "DefaultCacheBehavior" : {
+            "TargetOriginId" : "origin1",
+            "ViewerProtocolPolicy" : "redirect-to-https",
+            "ForwardedValues" : {
+              "QueryString" : "false"
+            }
+          },
+          "PriceClass" : "PriceClass_100"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,220 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates MariaDB RDS database for JF Stage.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: RDS Database Input Parameters
+    Parameters:
+      - VPCID
+      - EnvironmentType
+      - DBClass
+      - DBAllocatedStorage
+      - EndPointName
+      - DBName
+      - DBUsername
+      - DBPassword
+      - DBPort
+      - SecurityGroupID
+      - Label:
+        default: RDS Database Tags
+    Parameters:
+      - Environment
+      - Role
+  NetworkStackName:
+    Description: Name of an active CloudFormation stack that contains the networking resources, such as the subnet and security group, that will be used in this stack.
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
+    Default: JF-Staging-VPC
+  EnvironmentType:
+    Description: "Select the Environment name in the drop down list"
+    Type: String
+    AllowedValues:
+    - Jokefire-Prod
+    - Jokefire-Stage
+    - Jokefire-QA
+    - Jokefire-Dev
+  VPCID:
+    - Fn::ImportValue:
+       Fn::Sub: "${AWS::StackName}-VPCID"
+       Default: 'vpc-75a91f0d'
+Description: Enter the Existing VPC ID for which you want to create an RDS instance.
+Type: AWS::EC2::VPC::Id
+EndPointName:
+    Description: 'The RDS Endpoint Name. Ex: JF-Stage'
+    Type: String
+    MinLength: '1'
+    MaxLength: '20'
+DBName:
+    Description: The database name. Leave blank.
+    Type: String
+DBUsername:
+    Default: dbadmin
+    Description: The database admin account username
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+DBPassword:
+    NoEcho: 'true'
+    Description: The database admin account password
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*"
+    ConstraintDescription: Must be at least 8 characters containing letters, numbers and symbols.
+DBClass:
+    Default: db.t2.micro
+    Description: Database instance class
+    Type: String
+    AllowedValues:
+    - db.t2.micro
+    - db.m3.medium
+    - db.m3.large
+    - db.m3.xlarge
+    - db.m3.2xlarge
+    - db.r3.large
+    - db.r3.xlarge
+    - db.r3.2xlarge
+    - db.r3.4xlarge
+    - db.r3.8xlarge
+    - db.m4.large
+    - db.m4.xlarge
+    - db.m4.2xlarge
+    - db.m4.4xlarge
+    ConstraintDescription: must select a valid database instance type.
+DBAllocatedStorage:
+    Default: '100'
+    Description: The size of the database (Gb)
+    Type: Number
+    MinValue: '5'
+    MaxValue: '1024'
+    ConstraintDescription: must be between 5 and 1024Gb.
+DBPort:
+    Description: DB listening port
+    Type: Number
+    MinValue: '1150'
+    MaxValue: '65535'
+    Default: '3306'
+    ConstraintDescription: Must be between 3300 and 3400
+Environment:
+    Description: Enter the Environment.
+    Type: String
+    AllowedValues:
+    - DEV
+    - QA
+    - STAGE
+    - PROD
+Owner:
+    Default: ''
+    Description: 'Enter the owner name. Ex: Tim Dunphy'
+    Type: String
+Role:
+    Default: ''
+    Description: 'Enter the role definition. Ex: Web'
+    Type: String
+Mappings:
+  EnvType:
+    Jokefire-Stage:
+      DefaultRetentionDays: '14'
+      MultiAZ: 'false'
+      DBSubnets:
+        Fn::ImportValue:
+              Fn::Sub: "${NetworkStackName}-SubnetID-E"
+        Fn::ImportValue:
+              Fn::Sub: "${NetworkStackName}-SubnetID-F"
+      SecurityGroupID:
+      - Fn::ImportValue:
+        Fn::Sub: "${NetworkStackName}-DB-SecurityGroupID"
+Resources:
+  RDSDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: RDS DB Subnet Group
+      SubnetIds:
+        Fn::FindInMap:
+        - EnvType
+        - Ref: EnvironmentType
+        - DBSubnets
+  RDSDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier:
+        Ref: EndPointName
+      DBName:
+        Ref: DBName
+      AllocatedStorage:
+        Ref: DBAllocatedStorage
+      DBInstanceClass:
+        Ref: DBClass
+      Engine: MariaDB
+      EngineVersion: 10.0.31
+      MasterUsername:
+        Ref: DBUsername
+      MasterUserPassword:
+        Ref: DBPassword
+      DBSubnetGroupName:
+        Ref: RDSDBSubnetGroup
+      PubliclyAccessible: 'true'
+      StorageEncrypted: 'false'
+      PreferredBackupWindow: 01:00-02:00
+      VPCSecurityGroups:
+        Fn::FindInMap:
+        - EnvType
+        - Ref: EnvironmentType
+        - SecurityGroupID
+      BackupRetentionPeriod:
+        Fn::FindInMap:
+        - EnvType
+        - Ref: EnvironmentType
+        - DefaultRetentionDays
+      MultiAZ:
+        Fn::FindInMap:
+        - EnvType
+        - Ref: EnvironmentType
+        - MultiAZ
+      Tags:
+      - Key: Name
+        Value:
+        Fn::Join:
+        - "-"
+        - - Ref: AWS::StackName
+        - db
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: Role
+        Value: !Ref Role
+      - Key: Environment
+        Value: !Ref Environment
+Outputs:
+  JDBCConnectionString:
+    Description: JDBC connection string for database
+    Value:
+      Fn::Join:
+      - ''
+      - - jdbc:mysql://
+      - Fn::GetAtt:
+        - RDSDB
+        - Endpoint.Address
+        - ":"
+        - Fn::GetAtt:
+        - RDSDB
+        - Endpoint.Port
+        - "/"
+        - Ref: DBName
+  DBAddress:
+    Description: Address of database endpoint
+    Value:
+      Fn::GetAtt:
+      - RDSDB
+      - Endpoint.Address
+  DBPort:
+    Description: Database endpoint port number
+    Value:
+      Fn::GetAtt:
+      - RDSDB
+      - Endpoint.Port

@@ -1,0 +1,41 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+    "autoscalinggroup1" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "VPCZoneIdentifier" : [ "subnet-71ab3438", "subnet-416ece1a" ],
+        "DesiredCapacity" : "6",
+        "HealthCheckType" : "EC2",
+        "MaxSize" : "10",
+        "MinSize" : "1",
+        "LaunchConfigurationName" : {
+          "Ref" : "LaunchConfig1"
+        },
+        "Tags" : [ {
+          "Key" : "Name",
+          "Value" : "RollingUpdate",
+          "PropagateAtLaunch" : "true"
+        } ]
+      },
+      "UpdatePolicy" : {
+        "AutoScalingRollingUpdate" : {
+          "MinInstancesInService" : "1",
+          "MaxBatchSize" : "2",
+          "WaitOnResourceSignals" : "false",
+          "PauseTime" : "PT5S"
+        }
+      }
+    },
+    "LaunchConfig1" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+        "AssociatePublicIpAddress" : "true",
+        "ImageId" : "ami-c58c1dd3",
+        "InstanceType" : "t2.xlarge",
+        "KeyName" : "myamazon_us_east1_keypair",
+        "SecurityGroups" : [ "sg-b9d0a8c6" ]
+      }
+    }
+  }
+}
