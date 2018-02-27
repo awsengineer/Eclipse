@@ -1,0 +1,28 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+    "SourceBucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "Private",
+        "BucketName" : "ztest141101adsf"
+      }
+    },
+    "myTrail" : {
+      "Type" : "AWS::CloudTrail::Trail",
+      "Properties" : {
+        "S3BucketName" : "mehdilogs",
+        "IsLogging" : true,
+        "EventSelectors" : [{
+          "DataResources" : [{
+            "Type" : "AWS::S3::Object",
+            "Values" : ["arn:aws:s3:::ztest141101adsf/"]
+          }],
+          "IncludeManagementEvents" : "True",
+          "ReadWriteType" : "All"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Integration Hub CDN - basic starter template",
+  "Parameters" : {
+    "S3BucketName" : {
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9-]*",
+      "ConstraintDescription" : "The bucket name can be between 3 and 63 characters long, and can contain only lower-case characters, numbers, periods, and dashes. The bucket name cannot contain underscores, end with a dash, have consecutive periods, use dashes adjacent to periods or be formatted as an IP address",
+      "Description" : "Name of private s3 bucket to create",
+      "MaxLength" : 63,
+      "MinLength" : 3,
+      "Type" : "String",
+      "Default" : "ztest1511b"
+    }
+  },
+  "Resources" : {
+    "CloudFrontDistribution" : {
+      "DependsOn" : [ "S3Bucket", "CloudFrontOriginAccessIdentity" ],
+      "Properties" : {
+        "DistributionConfig" : {
+          "Comment" : "Integration Hub CDN",
+          "DefaultCacheBehavior" : {
+            "AllowedMethods" : [ "GET", "HEAD" ],
+            "Compress" : true,
+            "ForwardedValues" : {
+              "Cookies" : {
+                "Forward" : "none"
+              },
+              "QueryString" : false
+            },
+            "TargetOriginId" : "inthubcdn",
+            "TrustedSigners" : [ {
+              "Ref" : "AWS::AccountId"
+            } ],
+            "ViewerProtocolPolicy" : "https-only"
+          },
+          "Enabled" : true,
+          "HttpVersion" : "http2",
+          "Origins" : [ {
+            "DomainName" : {
+              "Fn::GetAtt" : "S3Bucket.DomainName"
+            },
+            "Id" : "inthubcdn",
+            "S3OriginConfig" : {
+              "OriginAccessIdentity" : {
+                "Fn::Sub" : "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+              }
+            }
+          } ],
+          "PriceClass" : "PriceClass_All",
+          "ViewerCertificate" : {
+            "CloudFrontDefaultCertificate" : true
+          }
+        }     
+      },
+      "Type" : "AWS::CloudFront::Distribution"
+    },
+    "CloudFrontOriginAccessIdentity" : {
+      "Properties" : {
+        "CloudFrontOriginAccessIdentityConfig" : {
+          "Comment" : "access-identity-integration-hub-private"
+        }
+      },
+      "Type" : "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+    },
+    "S3Bucket" : {
+      
+      "Properties" : {
+        "BucketName" : {
+          "Ref" : "S3BucketName"
+        }
+      },
+      "Type" : "AWS::S3::Bucket"
+    },
+    "S3BucketPolicy" : {
+      "DependsOn" : [ "S3Bucket" ],
+      "Properties" : {
+        "Bucket" : {
+          "Ref" : "S3Bucket"
+        },
+        "PolicyDocument" : {
+          "Statement" : [ {
+            "Action" : [ "s3:GetObject" ],
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : [ {
+                "Fn::Sub" : "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
+              } ]
+            },
+            "Resource" : [ {
+              "Fn::Join" : [ "/", [ {
+                "Fn::GetAtt" : "S3Bucket.Arn"
+              }, "*" ] ]
+            } ]
+          } ]
+        }
+      },
+      "Type" : "AWS::S3::BucketPolicy"
+    }
+  }
+}

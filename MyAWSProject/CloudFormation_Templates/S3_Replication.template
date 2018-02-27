@@ -1,0 +1,28 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+    "SourceBucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "Private",
+        "BucketName" : "ztest141101adsf",
+        "VersioningConfiguration" : {
+          "Status" : "Enabled"
+        },
+        "ReplicationConfiguration" : {
+          "Role" : "arn:aws:iam::960780153193:role/fullrole",
+          "Rules" : [ {
+            "Prefix" : "/",
+            "Status" : "Enabled",
+            "Destination" : {
+              "Bucket" : "arn:aws:s3:::ztest1replica",
+              "AccessControlTranslation" : {
+                "Owner" : "Destination"
+              }
+            }
+          } ]
+        }
+      }
+    }
+  }
+}

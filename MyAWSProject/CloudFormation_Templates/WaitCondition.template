@@ -1,0 +1,40 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Resources" : {
+    "MyInstance2" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "DisableApiTermination" : "FALSE",
+        "ImageId" : "ami-c58c1dd3",
+        "InstanceType" : "t2.medium",
+        "KeyName" : "myamazon_us_east1_keypair",
+        "SecurityGroupIds" : [ "sg-b9d0a8c6" ],
+        "Monitoring" : "false",
+        "UserData" : {
+          "Fn::Base64" : {
+            "Fn::Join" : [ "", [ "#!/bin/bash -xe\n", "yum update -y aws-cfn-bootstrap\n", "# Signal the status from cfn-init\n", "/opt/aws/bin/cfn-signal -e 0 -r \"Instance Creation Complete\" ", {
+              "Ref" : "WaitHandle"
+            }, "\n" ] ]
+          }
+        },
+        "Tags" : [ {
+          "Key" : "Name",
+          "Value" : "MyInstance2"
+        } ]
+      }
+    },
+    "WaitHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+    "WaitCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "MyInstance2",
+      "Properties" : {
+        "Handle" : {
+          "Ref" : "WaitHandle"
+        },
+        "Timeout" : "30000"
+      }
+    }
+  }
+}

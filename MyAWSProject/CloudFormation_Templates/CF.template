@@ -1,0 +1,113 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "CloudFront with change in bucket policy",
+  "Parameters" : { },
+  "Resources" : {
+    "CFDistroStudioRenders" : {
+      "Properties" : {
+        "DistributionConfig" : {
+          "DefaultCacheBehavior" : {
+            "AllowedMethods" : [ "HEAD", "GET" ],
+            "CachedMethods" : [ "HEAD", "GET" ],
+            "Compress" : "false",
+            "ForwardedValues" : {
+              "Cookies" : {
+                "Forward" : "none"
+              },
+              "QueryString" : "true"
+            },
+            "MinTTL" : 0,
+            "SmoothStreaming" : "false",
+            "TargetOriginId" : {
+              "Ref" : "s3BucketStudioRenders"
+            },
+            "TrustedSigners" : [ {
+              "Ref" : "AWS::AccountId"
+            } ],
+            "ViewerProtocolPolicy" : "https-only"
+          },
+          "Enabled" : true,
+          "Origins" : [ {
+            "DomainName" : {
+              "Fn::Join" : [ "", [ "ztest1411bro.s3.amazonaws.com" ] ]
+            },
+            "Id" : {
+              "Ref" : "s3BucketStudioRenders"
+            },
+            "S3OriginConfig" : {
+              "OriginAccessIdentity" : {
+                "Fn::Join" : [ "", [ "origin-access-identity/cloudfront/", {
+                  "Ref" : "CFDistroStudioRendersOAI"
+                } ] ]
+              }
+            }
+          } ],
+          "PriceClass" : "PriceClass_All",
+          "Restrictions" : {
+            "GeoRestriction" : {
+              "Locations" : [ ],
+              "RestrictionType" : "none"
+            }
+          },
+          "ViewerCertificate" : {
+            "CloudFrontDefaultCertificate" : "true",
+            "MinimumProtocolVersion" : "TLSv1"
+          }
+        }
+      },
+      "Type" : "AWS::CloudFront::Distribution"
+    },
+    "CFDistroStudioRendersOAI" : {
+      "Properties" : {
+        "CloudFrontOriginAccessIdentityConfig" : {
+          "Comment" : {
+            "Fn::Join" : [ "", [ "access-identity-", {
+              "Ref" : "s3BucketStudioRenders"
+            }, ".s3.amazonaws.com" ] ]
+          }
+        }
+      },
+      "Type" : "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+    },
+    "s3BucketStudioRenders" : {
+      "Properties" : {
+        "AccessControl" : "Private",
+        "BucketName" : "zztest1411z",
+        "CorsConfiguration" : {
+          "CorsRules" : [ {
+            "AllowedHeaders" : [ "Authorization" ],
+            "AllowedMethods" : [ "GET" ],
+            "AllowedOrigins" : [ "*" ],
+            "MaxAge" : "3000"
+          } ]
+        }
+      },
+      "Type" : "AWS::S3::Bucket"
+    },
+    "s3BucketStudioRendersPolicy" : {
+      "Properties" : {
+        "Bucket" : {
+          "Ref" : "s3BucketStudioRenders"
+        },
+        "PolicyDocument" : {
+          "Statement" : [ {
+            "Action" : "s3:GetObject",
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : "203837324023"
+            },
+            "Resource" : {
+              "Fn::Join" : [ "", [ "arn:aws:s3:::", {
+                "Ref" : "s3BucketStudioRenders"
+              }, "/*" ] ]
+            },
+            "Sid" : "AllowCloudFront"
+          } ],
+          "Version" : "2012-10-17"
+        }
+      },
+      "Type" : "AWS::S3::BucketPolicy"
+    }
+  },
+  "Outputs" : { }
+}
